@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-10-05
+### Added
+- Integrated Fooocus as a third UI option alongside Automatic1111 and ComfyUI
+- Added support for Fooocus model management
+- Implemented automatic browser launch after successful Fooocus startup
+- Added port 7865 as the default for Fooocus UI
+
 ## [1.0.0] - 2025-10-04
 ### Added
 - Initial release of Stable Diffusion WebUI One-Click Launcher
