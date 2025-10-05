@@ -1,0 +1,28 @@
+# Directories
+/models/
+/outputs/
+/extensions/
+/Modal Holder/
+
+# Configuration files
+.ui-config
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Docker related
+.dockerignore
+.env
+
+# IDE specific files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project

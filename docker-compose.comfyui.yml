@@ -1,0 +1,23 @@
+services:
+  stable-diffusion:
+    image: ghcr.io/comfyanonymous/comfyui:latest
+    container_name: stable-diffusion
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTHONUNBUFFERED=1  # Ensures Python output is shown immediately in logs
+      - NVIDIA_DRIVER_CAPABILITIES=all  # Enables all NVIDIA driver capabilities
+    ports:
+      - "8188:8188"  # ComfyUI default port
+    volumes:
+      - ./models:/ComfyUI/models
+      - ./outputs:/ComfyUI/output
+      - ./config/comfy:/ComfyUI/config
+    shm_size: "4gb"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

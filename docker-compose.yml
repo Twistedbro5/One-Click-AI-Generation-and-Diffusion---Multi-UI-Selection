@@ -1,0 +1,64 @@
+# ==============================================================================
+# Stable Diffusion WebUI - Docker Compose Configuration
+# ==============================================================================
+# IMPORTANT: This file works with relative paths - it can be placed anywhere
+# 
+# To change installation directory:
+# 1. Move entire folder to desired location
+# 2. Run start-sd.bat from the new location (paths auto-adjust)
+# ==============================================================================
+
+services:
+  stable-diffusion:
+    # Image: NVIDIA CUDA-enabled Stable Diffusion WebUI
+    # This requires NVIDIA GPU with proper drivers
+    image: ghcr.io/ai-dock/stable-diffusion-webui:latest-cuda
+    
+    container_name: stable-diffusion
+    runtime: nvidia
+    
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - WEBUI_PORT=7860
+      #- SERVICEPORTAL_PORT=1111
+      #- DIRECT_ADDRESS=localhost:7860
+      #- DIRECT_ADDRESS_GET_WAN=false
+      
+      # WebUI Command Line Arguments:
+      # --medvram: Optimize for GPUs with 4-8GB VRAM
+      # --opt-sdp-attention: Memory optimization
+      # --api: Enable API access
+      # --listen: Listen on all network interfaces
+      # 
+      # For LOW VRAM (4GB or less), change --medvram to --lowvram
+      # For HIGH VRAM (12GB+), you can remove --medvram entirely
+      - COMMANDLINE_ARGS=--opt-sdp-attention --xformers --disable-nan-check --api --listen
+    
+    ports:
+      # Expose WebUI on localhost:7860
+      - "7860:17860"
+    
+    volumes:
+      # Mount local directories to container
+      # Format: HOST_PATH:CONTAINER_PATH
+      # Using relative paths - they resolve based on docker-compose.yml location
+      - ./models:/opt/stable-diffusion-webui/models
+      - ./outputs:/opt/stable-diffusion-webui/outputs
+      - ./extensions:/opt/stable-diffusion-webui/extensions
+    
+    # Shared memory size - needed for some operations
+    # Increase if you get "out of shared memory" errors or are consistently maxing
+    shm_size: "4gb"
+    
+    # Restart policy: restart container unless manually stopped
+    restart: unless-stopped
+    
+    # GPU resources are automatically detected and allocated by Docker
+    
+       # Health check to monitor container status
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]  
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
