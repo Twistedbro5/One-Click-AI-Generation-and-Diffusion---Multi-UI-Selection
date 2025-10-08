@@ -537,8 +537,15 @@ REM ============================================================
 title AI WebUI Launcher - Starting !WEBUI_TYPE!...
 echo [STEP 6/6] Checking for updates and starting !WEBUI_TYPE!...
 echo [*] Pulling latest image (if available)...
-!COMPOSE_CMD! -f !COMPOSE_FILE! pull 2>nul
-echo [OK] Image check complete
+!COMPOSE_CMD! -f !COMPOSE_FILE! pull 2>pull-error.log
+if %errorlevel% neq 0 (
+    echo [WARNING] Could not check for updates:
+    type pull-error.log 2>nul
+    echo [*] Will try to continue with local image...
+) else (
+    echo [OK] Image check complete - you're up to date!
+)
+del /q pull-error.log 2>nul
 echo.
 echo [*] Starting container...
 echo [*] This may take a few minutes on first run...
@@ -655,10 +662,10 @@ echo   Access URL: http://localhost:!WEBUI_PORT!
 echo.
 echo   TIPS:
 echo   - First startup may take 5-10 minutes to download models
-echo   - To switch UI: Run Select-UI and then run this script again
+echo   - To switch UI: Run Select-UI and then run this script again, otherwise it will use the Selected one
 echo   - To stop: Close Docker Desktop, or just the container itself, or run !COMPOSE_CMD! -f !COMPOSE_FILE! down
 echo   - To view logs: docker logs !CONTAINER_NAME! -f
-echo   - Start-WebUI will default to this Setup per ui.config
+echo   - Start-WebUI will Auto-Update your WebUI and Base Models
 echo.
 echo ============================================================
 echo.
@@ -673,12 +680,14 @@ if "!SERVICE_READY!"=="1" (
     echo [OK] Browser opened
     echo.
     echo [*] If the page is not ready yet, wait a few minutes for the service to fully start.
+    echo.
+    echo [*] Start-WebUI.bat will automatically update your WebUIs as well.
 )
 
 echo.
 echo ============================================================
 echo.
-echo Press any key to exit this launcher window...
+echo Press any key to become a Rocketman and exit the Terminal after your WebUI has Loaded...
 pause >nul
 exit /b 0
 
