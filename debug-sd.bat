@@ -257,7 +257,7 @@ if %errorlevel% equ 0 (
     netstat -ano | findstr :7860
     echo.
     echo [SUGGESTION] Close the application using port 7860, or
-    echo [SUGGESTION] Edit docker-compose.yml to use a different port
+    echo [SUGGESTION] Edit docker-compose.automatic1111.yml to use a different port
 ) else (
     echo [OK] Port 7860 is available
 )
@@ -306,7 +306,7 @@ if %errorlevel% equ 0 (
     echo - Container: NOT RUNNING
 )
 
-if exist "docker-compose.yml" (
+if exist "docker\docker-compose.automatic1111.yml" (
     echo - Configuration: OK
 ) else (
     echo - Configuration: MISSING

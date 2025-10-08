@@ -30,8 +30,7 @@
    - Open Docker Desktop and wait for it to fully start
 
 2. **Place Files**
-   - Place this folder at: `C:\Stablediffusion`
-   - ⚠️ **Important**: Must be exactly this path (or update paths in `docker-compose.yml`)
+
 
 3. **Run the Launcher**
    - Double-click `start-sd.bat` (NO admin rights needed)
@@ -95,25 +94,24 @@
 ## File Structure
 
 ```
-C:\Stablediffusion\
-├── .ui-config                # Stores the selected UI (AUTOMATIC1111 or COMFYUI)
-├── start-sd.bat              # Main launcher (use this!)
-├── debug-sd.bat              # Diagnostic tool for troubleshooting
-├── select-ui.cmd             # UI selection script
-├── download-model.bat        # Model downloader (called by start-sd.bat)
-├── docker-compose.yml        # Docker config for Automatic1111 WebUI
-├── docker-compose.comfyui.yml # Docker config for ComfyUI
-├── README.md                 # This file
-├── models\                   # AI model files (shared between UIs)
-│   ├── Stable-diffusion\     # Base models (.safetensors, .ckpt)
-│   ├── VAE\                  # VAE models
-│   └── Lora\                 # LoRA models
-├── outputs\                  # Generated images
-│   ├── automatic1111\        # Outputs from Automatic1111
-│   └── comfyui\              # Outputs from ComfyUI
-├── config\                   # Configuration files
-│   └── comfy\                # ComfyUI configuration
-└── extensions\               # WebUI extensions (Automatic1111 only)
+StableDev/
+├── docker/
+│   ├── docker-compose.yml           # Automatic1111
+│   ├── docker-compose.fooocus.yml   # Fooocus
+│   └── docker-compose.comfyui.yml   # ComfyUI
+├── Automatic1111/                   # Automatic1111 data
+│   ├── models/
+│   ├── outputs/
+│   └── extensions/
+├── Fooocus/                         # Fooocus data
+│   ├── data/
+│   └── outputs/
+└── ComfyUI/                         # ComfyUI data
+    ├── models/
+    ├── outputs/
+    ├── config/
+    ├── input/
+    └── custom_nodes/
 ```
 
 ## Managing the Application

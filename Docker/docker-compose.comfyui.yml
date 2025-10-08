@@ -1,0 +1,26 @@
+services:
+  comfyui:
+    init: true
+    container_name: comfyui
+    image: yanwk/comfyui-boot:cu124-megapak
+    ports:
+      - "8188:8188"
+    volumes:
+      - "../ComfyUI/storage:/root"
+    environment:
+      - CLI_ARGS=--front-end-version Comfy-Org/ComfyUI_frontend@latest
+    security_opt:
+      - "label=type:nvidia_container_t"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

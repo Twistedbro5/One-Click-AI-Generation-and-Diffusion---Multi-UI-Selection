@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2025-10-07
+### Added
+- **Unified Launcher**: Complete solution for managing all three UIs through a single interface:
+  - Automatic1111
+  - ComfyUI
+  - Fooocus
+- **Automatic Dependency Management**:
+  - Detects and offers to install Git if missing
+  - Detects and offers to install Docker Desktop if missing
+- **Enhanced Error Handling**: Improved error detection and user feedback throughout the launcher
+
+### Changed
+- **Docker Configuration**:
+  - Reorganized into separate files for each UI: `docker-compose.automatic1111.yml`, `docker-compose.comfyui.yml`, `docker-compose.fooocus.yml`
+  - Improved container health checks and configurations
+- **Code Structure**:
+  - Implemented common interfaces for UI management
+  - Modular design allows for easy addition of future UIs
+  - Centralized configuration management
+  - Unified logic for UI management while maintaining unique handling for each UI
+
 ## [1.1.0] - 2025-10-05
 ### Added
 - Integrated Fooocus as a third UI option alongside Automatic1111 and ComfyUI

@@ -40,11 +40,12 @@ services:
     
     volumes:
       # Mount local directories to container
-      # Format: HOST_PATH:CONTAINER_PATH
-      # Using relative paths - they resolve based on docker-compose.yml location
-      - ./models:/opt/stable-diffusion-webui/models
-      - ./outputs:/opt/stable-diffusion-webui/outputs
-      - ./extensions:/opt/stable-diffusion-webui/extensions
+      # All data is stored in the Automatic1111 directory
+      - ../Automatic1111/models:/opt/stable-diffusion-webui/models
+      - ../Automatic1111/outputs:/opt/stable-diffusion-webui/outputs
+      - ../Automatic1111/extensions:/opt/stable-diffusion-webui/extensions
+      - ../Automatic1111/embeddings:/opt/stable-diffusion-webui/embeddings
+      - ../Automatic1111/loras:/opt/stable-diffusion-webui/models/Lora
     
     # Shared memory size - needed for some operations
     # Increase if you get "out of shared memory" errors or are consistently maxing
@@ -55,9 +56,9 @@ services:
     
     # GPU resources are automatically detected and allocated by Docker
     
-       # Health check to monitor container status
+    # Health check to monitor container status
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7860"]  
+      test: ["CMD", "curl", "-f", "http://localhost:17860"]  
       interval: 30s
       timeout: 10s
       retries: 5
