@@ -520,21 +520,27 @@ if %errorlevel% equ 0 (
 echo.
 
 REM ============================================================
-REM Clean up stopped containers
+REM Check if container exists and is stopped
 REM ============================================================
-echo [*] Cleaning up stopped containers...
+echo [*] Checking container status...
 docker ps -a --filter "name=!CONTAINER_NAME!" --filter "status=exited" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
 if %errorlevel% equ 0 (
-    docker rm !CONTAINER_NAME! >nul 2>&1
-    echo [OK] Stopped container removed
+    echo [*] Found stopped container - will restart it
+) else (
+    echo [*] No existing container found - will create new one
 )
 echo.
 
 REM ============================================================
-REM STEP 7: Start Docker container
+REM STEP 7: Pull latest image and start container
 REM ============================================================
 title AI WebUI Launcher - Starting !WEBUI_TYPE!...
-echo [STEP 6/6] Starting !WEBUI_TYPE! container...
+echo [STEP 6/6] Checking for updates and starting !WEBUI_TYPE!...
+echo [*] Pulling latest image (if available)...
+!COMPOSE_CMD! -f !COMPOSE_FILE! pull 2>nul
+echo [OK] Image check complete
+echo.
+echo [*] Starting container...
 echo [*] This may take a few minutes on first run...
 echo.
 
@@ -670,7 +676,9 @@ if "!SERVICE_READY!"=="1" (
 )
 
 echo.
-echo Press any key to Continue! You may Close this window now. 
+echo ============================================================
+echo.
+echo Press any key to exit this launcher window...
 pause >nul
 exit /b 0
 
