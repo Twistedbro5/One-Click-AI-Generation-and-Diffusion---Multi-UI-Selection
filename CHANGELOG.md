@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-10-08
+### Added
+- **Improved Port Management**: Better handling of port conflicts with clear user guidance
+- **Container Management**: Enhanced container status checking and recovery
+- **Configuration System**: New `webui_config.cfg` for storing UI preferences
+- **User Experience**: More intuitive menus and better error messages
+
+### Changed
+- **Simplified Scripts**: Removed complex file parsing in favor of config files
+- **Better Error Handling**: More robust error recovery and user feedback
+- **Container Lifecycle**: Improved handling of container start/stop/restart operations
+- **Documentation**: Updated README and help text for clarity
+
+### Fixed
+- Fixed issues with container detection and management
+- Resolved port conflict handling
+- Improved script stability and reliability
+
 ## [1.1.1] - 2025-10-07
 ### Added
 - **Unified Launcher**: Complete solution for managing all three UIs through a single interface:

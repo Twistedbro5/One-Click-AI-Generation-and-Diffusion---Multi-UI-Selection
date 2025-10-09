@@ -3,6 +3,11 @@ setlocal enabledelayedexpansion
 title Generative AI WebUI Launcher - One-Click Solution
 color 0A
 
+REM ============================================================
+REM MAIN SCRIPT START
+REM ============================================================
+:MAIN
+
 REM Enable ANSI escape sequences for colored output
 reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -11,9 +16,7 @@ set "CYAN=[96m"
 set "BOLD=[1m"
 set "RESET=[0m"
 
-REM ============================================================
 REM Change to script directory
-REM ============================================================
 cd /d "%~dp0"
 
 REM ============================================================
@@ -44,9 +47,9 @@ echo.
 echo [STEP 1/6] Checking prerequisites...
 echo.
 
-set "GIT_INSTALLED=0"
-set "DOCKER_INSTALLED=0"
-set "NEED_INSTALL=0"
+set GIT_INSTALLED=0
+set DOCKER_INSTALLED=0
+set NEED_INSTALL=0
 
 REM Check for Git
 echo [*] Checking for Git...
@@ -169,7 +172,7 @@ REM ============================================================
 echo [*] Checking for WSL 2...
 wsl --status >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [!] WSL 2 is NOT installed
+    echo [!] WSL 2 is NOT installed - But should come with docker
     echo [*] Installing WSL 2...
     echo [!] This may take several minutes...
     wsl --install --no-distribution
@@ -335,20 +338,25 @@ echo.
 
 set "WEBUI_TYPE="
 set "VALID_UIS=AUTOMATIC1111 COMFYUI FOOOCUS"
+set "CONFIG_FILE=webui_config.cfg"
 
-REM Check if .ui-config exists and read it
-if exist ".ui-config" (
-    set /p WEBUI_TYPE=<.ui-config
-    
-    REM Trim whitespace
-    for /f "tokens=* delims= " %%a in ("!WEBUI_TYPE!") do set WEBUI_TYPE=%%a
-    
-    REM Validate the UI type
+REM Check if config file exists and read it
+if exist "%CONFIG_FILE%" (
+    for /f "usebackq tokens=2 delims==" %%a in (`findstr /b /i "DEFAULT_UI" "%CONFIG_FILE%"`) do (
+        set "WEBUI_TYPE=%%a"
+        REM Remove quotes and trim spaces
+        set "WEBUI_TYPE=!WEBUI_TYPE:"=!"
+        for /f "tokens=*" %%b in ("!WEBUI_TYPE!") do set "WEBUI_TYPE=%%~b"
+    )
+)
+
+REM If no valid UI type, Initiate selection
+REM Validate the UI type
+if defined WEBUI_TYPE (
     set "UI_VALID=0"
     for %%U in (%VALID_UIS%) do (
         if /i "!WEBUI_TYPE!"=="%%U" set "UI_VALID=1"
     )
-    
     if "!UI_VALID!"=="0" (
         echo [WARNING] Invalid UI configuration found: [!WEBUI_TYPE!]
         set "WEBUI_TYPE="
@@ -356,7 +364,8 @@ if exist ".ui-config" (
 )
 
 REM If no valid UI type, show selection menu
-if "!WEBUI_TYPE!"=="" (
+if not defined WEBUI_TYPE (
+    :UI_SELECTION_MENU
     cls
     echo.
     echo ============================================================
@@ -369,22 +378,27 @@ if "!WEBUI_TYPE!"=="" (
     echo 2. !BOLD!Fooocus!RESET! - Modern UI, optimized defaults, best results out-of-box for Tech Savvy users !CYAN!^(RECOMMENDED^)!RESET!
     echo 3. !BOLD!ComfyUI!RESET! - Workflow node-based interface for Advanced Technical users to build and train their own Blueprints
     echo.
-    set /p choice="Enter your choice (1-3): "
+    set "choice="
+    set /p "choice=Enter your choice (1-3): "
     
     if "!choice!"=="1" (
         set "WEBUI_TYPE=AUTOMATIC1111"
-        echo AUTOMATIC1111>.ui-config
     ) else if "!choice!"=="2" (
         set "WEBUI_TYPE=FOOOCUS"
-        echo FOOOCUS>.ui-config
     ) else if "!choice!"=="3" (
         set "WEBUI_TYPE=COMFYUI"
-        echo COMFYUI>.ui-config
     ) else (
         echo [ERROR] Invalid selection
-        pause
-        exit /b 1
+        timeout /t 2 /nobreak >nul
+        goto UI_SELECTION_MENU
     )
+    
+    REM Save to config file
+    echo # AI WebUI Configuration> "%CONFIG_FILE%"
+    echo # This file stores the user's preferred WebUI selection>> "%CONFIG_FILE%"
+    echo # Do not modify this file manually>> "%CONFIG_FILE%"
+    echo.>> "%CONFIG_FILE%"
+    echo DEFAULT_UI=!WEBUI_TYPE!>> "%CONFIG_FILE%"
 )
 
 echo [OK] Using UI: !WEBUI_TYPE!
@@ -409,9 +423,9 @@ if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
 )
 
 REM ============================================================
-REM Check if UI is installed
+REM STEP 3: Check if UI is installed
 REM ============================================================
-echo [*] Verifying !WEBUI_TYPE! installation...
+echo [STEP 3/6] Verifying !WEBUI_TYPE! installation...
 set "UI_INSTALLED=0"
 
 if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
@@ -449,7 +463,7 @@ if "!UI_INSTALLED!"=="0" (
     ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
         echo ComfyUI needs to be set up.
         echo.
-        echo Download size: ~25-30 GB ^(This is a MegaPack of models^)
+        echo Download size: ~25-30 GB ^(This is a MegaPack of models for professional quality use^)
         echo Estimated time: 10-20 minutes
     )
     
@@ -492,47 +506,160 @@ echo [OK] Directories ready
 echo.
 
 REM ============================================================
-REM STEP 6: Check port availability
+REM STEP 5: Check container and port status
 REM ============================================================
-echo [STEP 5/6] Checking port !WEBUI_PORT! availability...
+echo [STEP 5/6] Checking system status...
+
+REM First, check if our container exists and get its port
+set "CONTAINER_RUNNING=0"
+set "CONTAINER_EXISTS=0"
+set "ACTUAL_PORT=!WEBUI_PORT!"
+
+REM Check if container is running
+docker ps --filter "name=!CONTAINER_NAME!" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
+if %errorlevel% equ 0 (
+    set "CONTAINER_RUNNING=1"
+    
+    REM Get the actual port the container is using
+    for /f "tokens=2 delv=:>" %%p in ('docker port !CONTAINER_NAME! 2^>nul ^| findstr /C:"->"') do (
+        for /f "tokens=1" %%a in ("%%p") do set "ACTUAL_PORT=%%a"
+    )
+    
+    REM If the port is different from expected, update it
+    if not "!ACTUAL_PORT!"=="!WEBUI_PORT!" (
+        echo [INFO] Container is running on port !ACTUAL_PORT! (configured for !WEBUI_PORT!)
+        set "WEBUI_PORT=!ACTUAL_PORT!"
+    )
+    
+    echo [OK] Container is already running on port !WEBUI_PORT!
+    goto SHOW_MENU
+)
+
+REM Check if container exists but stopped
+docker ps -a --filter "name=!CONTAINER_NAME!" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
+if %errorlevel% equ 0 set "CONTAINER_EXISTS=1"
+
+REM Check if port is in use
 netstat -ano | findstr :!WEBUI_PORT! >nul 2>&1
 if %errorlevel% equ 0 (
-    echo [WARNING] Port !WEBUI_PORT! is already in use
-    echo [*] Checking if it's our container...
+    REM Port is in use, but our container isn't running
+    if "!CONTAINER_EXISTS!"=="1" (
+        echo [WARNING] Port !WEBUI_PORT! is in use, but our container is stopped
+        echo [*] Starting the existing container...
+        docker start !CONTAINER_NAME! >nul 2>&1
+        if %errorlevel% equ 0 (
+            echo [OK] Container started successfully
+            goto SHOW_MENU
+        )
+    }
     
-    docker ps --filter "name=!CONTAINER_NAME!" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
-    if %errorlevel% equ 0 (
-        echo [OK] Container is already running!
-        goto SUCCESS_MESSAGE
+    :PORT_CONFLICT
+    echo.
+    echo ============================================================
+    echo   Port !WEBUI_PORT! is already in use
+    echo ============================================================
+    echo.
+    echo SUGGESTIONS:
+    echo   - Close the application using port !WEBUI_PORT!
+    echo   - The WebUI might already be running - check http://localhost:!WEBUI_PORT!
+    echo   - Check Docker Desktop to ensure you dont already have a container running
+    echo.
+    echo 1. Continue with normal setup (may change port later or close program already using it)
+    echo 2. Exit (You can run Start-WebUI anytime to try again)
+    echo.
+    
+    set "port_choice="
+    set /p "port_choice=Choose an option (1-2): "
+    
+    if "!port_choice!"=="1" (
+        echo [*] Continuing with normal setup...
+        goto PULL_CONTAINER
+    ) else if "!port_choice!"=="2" (
+        exit /b 0
     ) else (
-        echo [*] Port is used by another process
-        echo.
-        echo SUGGESTIONS:
-        echo 1. Close the application using port !WEBUI_PORT!
-        echo 2. The WebUI might already be running - check http://localhost:!WEBUI_PORT!
-        echo.
-        choice /C YN /N /M "Continue anyway? [Y/N]: "
-        if errorlevel 2 exit /b 1
+        echo [*] Invalid choice, please try again
+        goto PORT_CONFLICT
     )
+    
+    REM Future implementation for different port
+    REM echo 2. Use a different port (Coming Soon!)
+    
 ) else (
     echo [OK] Port !WEBUI_PORT! is available
 )
+
+echo [*] No running container found - proceeding with setup
+
+:PULL_CONTAINER
+    
+    :SHOW_MENU
+    echo.
+    echo =========================================================================
+    echo   !WEBUI_TYPE! appears to already be running at http://localhost:!WEBUI_PORT!
+    echo =========================================================================
+    echo.
+    echo 1. Open in browser again
+    echo 2. Show container logs
+    echo 3. Restart container
+    echo 4. Delete and recreate container (use if broken)
+    echo 5. Exit
+    echo.
+    set "container_choice="
+    set /p "container_choice=Choose an option (1-5, or just close this window to exit): "
+    
+    if "!container_choice!"=="1" (
+        goto SUCCESS_MESSAGE
+    ) else if "!container_choice!"=="2" (
+        echo.
+        echo [*] Showing container logs (press Ctrl+C to return to menu):
+        echo ============================================================
+        docker logs -f !CONTAINER_NAME!
+        echo ============================================================
+        goto SHOW_MENU
+    ) else if "!container_choice!"=="3" (
+        echo [*] Restarting !WEBUI_TYPE! container...
+        docker restart !CONTAINER_NAME!
+        if errorlevel 1 (
+            echo [ERROR] Failed to restart container! You may need to Delete and Recreate with option 4.
+            goto SHOW_MENU
+        )
+        echo [OK] Container restarted
+        goto HEALTH_CHECK_LOOP
+    ) else if "!container_choice!"=="4" (
+        echo [*] Removing existing container...
+        docker rm -f !CONTAINER_NAME!
+        if errorlevel 1 (
+            echo [WARNING] Failed to remove container, attempting to continue... (You can check if it exists in Docker Desktop)
+        )
+        echo [*] Creating new container...
+    ) else if "!container_choice!"=="5" (
+        exit /b 0
+    ) else (
+        goto SUCCESS_MESSAGE
+    )
+} else {
+    REM Check if container exists but is stopped
+    docker ps -a --filter "name=!CONTAINER_NAME!" --filter "status=exited" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo [*] Found stopped !WEBUI_TYPE! container - starting it...
+        docker start !CONTAINER_NAME!
+        if errorlevel 1 (
+            echo [ERROR] Failed to start container
+            pause
+            exit /b 1
+        }
+        echo [OK] Container started
+        start "" "http://localhost:!WEBUI_PORT!"
+        goto SHOW_MENU
+    } else {
+        echo [*] No existing container found - will create new one
+    }
+}
 echo.
 
+:Pull_Container
 REM ============================================================
-REM Check if container exists and is stopped
-REM ============================================================
-echo [*] Checking container status...
-docker ps -a --filter "name=!CONTAINER_NAME!" --filter "status=exited" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [*] Found stopped container - will restart it
-) else (
-    echo [*] No existing container found - will create new one
-)
-echo.
-
-REM ============================================================
-REM STEP 7: Pull latest image and start container
+REM STEP 6: Pull latest image and start container
 REM ============================================================
 title AI WebUI Launcher - Starting !WEBUI_TYPE!...
 echo [STEP 6/6] Checking for updates and starting !WEBUI_TYPE!...
@@ -541,9 +668,9 @@ echo [*] Pulling latest image (if available)...
 if %errorlevel% neq 0 (
     echo [WARNING] Could not check for updates:
     type pull-error.log 2>nul
-    echo [*] Will try to continue with local image...
+    echo [*] Will continue with local image...
 ) else (
-    echo [OK] Image check complete - you're up to date!
+    echo [OK] Image check complete - you're updated!
 )
 del /q pull-error.log 2>nul
 echo.
@@ -662,10 +789,10 @@ echo   Access URL: http://localhost:!WEBUI_PORT!
 echo.
 echo   TIPS:
 echo   - First startup may take 5-10 minutes to download models
-echo   - To switch UI: Run Select-UI and then run this script again, otherwise it will use the Selected one
-echo   - To stop: Close Docker Desktop, or just the container itself, or run !COMPOSE_CMD! -f !COMPOSE_FILE! down
+echo   - To switch UI: Run select-ui.cmd and then run this script again
+echo   - To stop: Close Docker Desktop, or just the container itself
 echo   - To view logs: docker logs !CONTAINER_NAME! -f
-echo   - Start-WebUI will Auto-Update your WebUI and Base Models
+echo   - Start-WebUI will Auto-Update your WebUI and Included Base Models
 echo.
 echo ============================================================
 echo.
@@ -680,14 +807,12 @@ if "!SERVICE_READY!"=="1" (
     echo [OK] Browser opened
     echo.
     echo [*] If the page is not ready yet, wait a few minutes for the service to fully start.
-    echo.
-    echo [*] Start-WebUI.bat will automatically update your WebUIs as well.
 )
 
 echo.
 echo ============================================================
 echo.
-echo Press any key to become a Rocketman and exit the Terminal after your WebUI has Loaded...
+echo Press any key to exit the launcher...
 pause >nul
 exit /b 0
 
@@ -701,9 +826,9 @@ echo ============================================================
 echo   Prerequisites Required
 echo ============================================================
 echo.
-echo Unfortunately, Git and Docker are required to run this application. They are very small and easy to install.
+echo Unfortunately, Git and Docker are required to run this application.
 echo.
-echo Please install them manually here:
+echo Please install them manually:
 echo   - Git: https://git-scm.com/
 echo   - Docker Desktop: https://www.docker.com/products/docker-desktop/
 echo.
@@ -729,13 +854,4 @@ echo.
 pause
 exit /b 1
 
-REM ============================================================
-REM RefreshEnv - Refresh environment variables
-REM ============================================================
-:RefreshEnv
-echo [*] Refreshing environment variables...
-REM Update PATH from registry
-for /f "skip=2 tokens=3*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v Path 2^>nul') do set "SYS_PATH=%%a %%b"
-for /f "skip=2 tokens=3*" %%a in ('reg query "HKCU\Environment" /v Path 2^>nul') do set "USER_PATH=%%a %%b"
-set "PATH=%SYS_PATH%;%USER_PATH%"
 goto :eof
