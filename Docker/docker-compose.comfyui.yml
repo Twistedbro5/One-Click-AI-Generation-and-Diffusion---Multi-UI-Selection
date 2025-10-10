@@ -1,16 +1,25 @@
+version: "3.8"
+
 services:
   comfyui:
-    init: true
-    container_name: comfyui
-    image: yanwk/comfyui-boot:cu124-megapak
+    image: saladtechnologies/comfyui:sdxl-with-refiner
+    container_name: comfyui_sdxl_video
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      - CLI_ARGS=--listen 0.0.0.0
+      - COMFYUI_ALLOW_EXTERNAL=true
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     ports:
       - "8188:8188"
     volumes:
-      - "../ComfyUI/storage:/root"
-    environment:
-      - CLI_ARGS=--front-end-version Comfy-Org/ComfyUI_frontend@latest
-    security_opt:
-      - "label=type:nvidia_container_t"
+      - ./models:/opt/ComfyUI/models
+      - ./custom_nodes:/opt/ComfyUI/custom_nodes
+      - ./workflows:/opt/ComfyUI/user/default/workflows
+      - ./outputs:/opt/ComfyUI/output
+      - ./input:/opt/ComfyUI/input
+      - ./init-scripts:/init-scripts:ro
+    entrypoint: ["/bin/bash", "/init-scripts/entrypoint.sh"]
     deploy:
       resources:
         reservations:
@@ -18,9 +27,4 @@ services:
             - driver: nvidia
               device_ids: ['0']
               capabilities: [gpu]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8188"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    restart: unless-stopped
