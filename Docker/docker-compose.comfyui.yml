@@ -1,30 +1,35 @@
 version: "3.8"
 
 services:
-  comfyui:
-    image: saladtechnologies/comfyui:sdxl-with-refiner
-    container_name: comfyui_sdxl_video
-    user: "${UID:-1000}:${GID:-1000}"
+  comfyui_hybrid:
+    build:
+      context: .
+      dockerfile: dockerfile_comfyuihybrid
+    image: comfyui_hybrid:latest
+    container_name: comfyui_hybrid
+    restart: unless-stopped
     environment:
-      - CLI_ARGS=--listen 0.0.0.0
-      - COMFYUI_ALLOW_EXTERNAL=true
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     ports:
       - "8188:8188"
     volumes:
-      - ./models:/opt/ComfyUI/models
-      - ./custom_nodes:/opt/ComfyUI/custom_nodes
-      - ./workflows:/opt/ComfyUI/user/default/workflows
-      - ./outputs:/opt/ComfyUI/output
-      - ./input:/opt/ComfyUI/input
-      - ./init-scripts:/init-scripts:ro
-    entrypoint: ["/bin/bash", "/init-scripts/entrypoint.sh"]
+      # Map local directories to container paths
+      - ../ComfyUI/models:/workspace/ComfyUI/models
+      - ../ComfyUI/custom_nodes:/workspace/ComfyUI/custom_nodes
+      - ../ComfyUI/input:/workspace/ComfyUI/input
+      - ../ComfyUI/output:/workspace/ComfyUI/output
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0']
               capabilities: [gpu]
-    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s

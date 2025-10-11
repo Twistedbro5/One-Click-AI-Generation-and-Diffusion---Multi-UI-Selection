@@ -1,0 +1,43 @@
+# Stage 1: Get Wan2.2 repo
+FROM alpine/git AS wan_source
+WORKDIR /wan
+RUN git clone https://github.com/Wan-Video/Wan2.2.git .
+
+# Stage 2: Base from Salad SDXL + Refiner
+FROM saladtechnologies/comfyui:comfy0.3.40-api1.9.0-torch2.7.1-cuda12.6-sdxl-with-refiner
+
+WORKDIR /workspace/ComfyUI
+
+# Install required tools for model download
+RUN apt-get update && apt-get install -y git-lfs && \
+    pip install --no-cache-dir huggingface_hub[cli] && \
+    git lfs install && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Wan2.2 into custom_nodes
+COPY --from=wan_source /wan ./custom_nodes/Wan2.2
+
+# Prepare model directory mount point
+RUN mkdir -p ./models/Wan2.2
+
+# Only verify existence (model will be mounted from host)
+RUN echo "[INFO] Wan2.2 model expected in ./models/Wan2.2/" && \
+    echo "If not found, it will be downloaded automatically by the setup script."
+
+# Install Wan2.2 dependencies if present
+RUN if [ -f "./custom_nodes/Wan2.2/requirements.txt" ]; then \
+        pip install --no-cache-dir -r ./custom_nodes/Wan2.2/requirements.txt; \
+    fi
+
+# Extra video dependencies
+RUN pip install --no-cache-dir \
+    opencv-python-headless \
+    imageio[ffmpeg] \
+    imageio-ffmpeg \
+    av
+
+RUN chmod -R 755 /workspace/ComfyUI/custom_nodes
+
+EXPOSE 8188
+
+CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188"]
