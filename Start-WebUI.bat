@@ -618,7 +618,6 @@ if %errorlevel% equ 0 (
     
     if "!port_choice!"=="1" (
         echo [*] Continuing with normal setup...
-        goto HANDLE_COMFYUI
     ) else if "!port_choice!"=="2" (
         exit /b 0
     ) else (
@@ -630,6 +629,11 @@ if %errorlevel% equ 0 (
 )
 
 echo [*] No running container found - proceeding with setup
+
+REM Skip to container start for non-ComfyUI types
+if /i not "!WEBUI_TYPE!"=="COMFYUI" (
+    goto START_CONTAINER
+)
 goto HANDLE_COMFYUI
 
 :SHOW_MENU
@@ -672,7 +676,11 @@ if "!container_choice!"=="1" (
         echo [WARNING] Failed to remove container, attempting to continue... ^(You can check if it exists in Docker Desktop^)
     )
     echo [*] Creating new container...
-    goto HANDLE_COMFYUI
+    if /i "!WEBUI_TYPE!"=="COMFYUI" (
+        goto HANDLE_COMFYUI
+    ) else (
+        goto START_CONTAINER
+    )
 ) else if "!container_choice!"=="5" (
     exit /b 0
 ) else (
@@ -705,14 +713,13 @@ if /i "!WEBUI_TYPE!"=="COMFYUI" (
         echo.
         echo What would you like to do?
         echo   1. Retry the setup
-        echo   2. Choose a different UI
+        echo   2. Continue anyway (not recommended)
         echo   3. Exit
         echo.
         set "retry_choice="
         set /p "retry_choice=Enter your choice (1-3): "
         
         if "!retry_choice!"=="1" (
-            echo.
             echo [*] Retrying ComfyUI setup...
             pushd "%~dp0Docker"
             call setupcomfyui.bat
@@ -721,18 +728,27 @@ if /i "!WEBUI_TYPE!"=="COMFYUI" (
             if !SETUP_RESULT! neq 0 goto RETRY_PROMPT
         ) else if "!retry_choice!"=="2" (
             set "WEBUI_TYPE="
-            goto UI_SELECTION_MENU
-        ) else if "!retry_choice!"=="3" (
-            exit /b 1
+            echo [*] Skipping ComfyUI setup - some features may not work
+            pause
+            exit /b 0
         ) else (
-            echo [ERROR] Invalid choice. Please enter 1, 2, or 3.
-            timeout /t 1 >nul
-            goto RETRY_PROMPT
+            exit /b 1
         )
     )
     
     echo [OK] ComfyUI setup complete
     echo.
+    
+    REM After successful setup, verify container is running
+    docker ps --filter "name=comfyui_hybrid" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"comfyui_hybrid" >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo [ERROR] ComfyUI container is not running after setup
+        echo [*] Please check Docker logs for more information
+        pause
+        exit /b 1
+    )
+    
+    REM Go straight to health check
     goto HEALTH_CHECK_LOOP
 )
 
@@ -808,6 +824,46 @@ echo.
 REM ============================================================
 REM Health Check and Browser Launch
 REM ============================================================
+:START_CONTAINER
+REM ============================================================
+REM STEP 7: Start the container (for non-ComfyUI UIs)
+REM ============================================================
+if /i not "!WEBUI_TYPE!"=="COMFYUI" (
+    echo [*] Starting !WEBUI_TYPE! container...
+    docker compose -f "!COMPOSE_FILE!" up -d
+    if %errorlevel% neq 0 (
+        echo.
+        echo ============================================================
+        echo [ERROR] Failed to start !WEBUI_TYPE! container
+        echo ============================================================
+        echo.
+        echo SUGGESTIONS:
+        echo 1. Check if port !WEBUI_PORT! is already in use
+        echo 2. Ensure Docker Desktop is running
+        echo 3. Check logs for more details: docker logs !CONTAINER_NAME!
+        echo.
+        pause
+        exit /b 1
+    )
+    echo [OK] Container started successfully
+    echo.
+)
+
+REM For ComfyUI, the container is already started by setupcomfyui.bat
+REM so we just verify it's running
+if /i "!WEBUI_TYPE!"=="COMFYUI" (
+    echo [*] Verifying ComfyUI container is running...
+    docker ps --filter "name=comfyui_hybrid" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"comfyui_hybrid" >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo [ERROR] ComfyUI container is not running after setup
+        echo [*] Please check Docker logs for more information: docker logs comfyui_hybrid
+        pause
+        exit /b 1
+    }
+    echo [OK] ComfyUI container is running
+    echo.
+)
+
 :HEALTH_CHECK_LOOP
 title AI WebUI Launcher - Waiting for !WEBUI_TYPE! to be ready...
 echo [*] Waiting for !WEBUI_TYPE! to be ready...

@@ -200,7 +200,7 @@ Shows SUCCESS_MESSAGE
 
 ---
 
-## Future Improvements
+## Future Needs Improvements
 
 1. Add progress bars for model download
 2. Cache base image in first download
