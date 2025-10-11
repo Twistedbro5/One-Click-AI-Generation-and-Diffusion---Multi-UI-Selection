@@ -9,20 +9,19 @@ FROM saladtechnologies/comfyui:comfy0.3.40-api1.9.0-torch2.7.1-cuda12.6-sdxl-wit
 WORKDIR /workspace/ComfyUI
 
 # Install required tools for model download
-RUN apt-get update && apt-get install -y git-lfs && \
-    pip install --no-cache-dir huggingface_hub[cli] && \
-    git lfs install && \
-    rm -rf /var/lib/apt/lists/*
+# These will be available inside the container for future offline use
+RUN apt-get update && apt-get install -y \
+    git-lfs \
+    curl \
+    && pip install --no-cache-dir huggingface_hub[cli] \
+    && git lfs install \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy Wan2.2 into custom_nodes
 COPY --from=wan_source /wan ./custom_nodes/Wan2.2
 
 # Prepare model directory mount point
 RUN mkdir -p ./models/Wan2.2
-
-# Only verify existence (model will be mounted from host)
-RUN echo "[INFO] Wan2.2 model expected in ./models/Wan2.2/" && \
-    echo "If not found, it will be downloaded automatically by the setup script."
 
 # Install Wan2.2 dependencies if present
 RUN if [ -f "./custom_nodes/Wan2.2/requirements.txt" ]; then \
@@ -36,6 +35,7 @@ RUN pip install --no-cache-dir \
     imageio-ffmpeg \
     av
 
+# Ensure proper permissions
 RUN chmod -R 755 /workspace/ComfyUI/custom_nodes
 
 EXPOSE 8188

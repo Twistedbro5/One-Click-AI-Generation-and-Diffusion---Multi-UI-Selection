@@ -231,7 +231,7 @@ if !errorlevel! equ 0 (
     if !errorlevel! equ 0 (
         echo [OK] Virtualization capabilities detected
     ) else (
-        echo [INFO] Cannot verify Virtual Machine Platform status without admin
+        echo [INFO] Cannot verify Virtual Machine Platform status...
         echo [INFO] If Docker fails to start later, you may need to enable it:
         echo        1. Press Win+R ^(or search "Run" in Start Menu^)
         echo        2. Type: optionalfeatures
@@ -407,7 +407,7 @@ if not defined WEBUI_TYPE (
     echo Defaults:
     echo 1. AUTOMATIC1111 ~5GB - Includes Stable Diffusion 1.5 - Simple, Small, Beginner Friendly for low specs - Can be vastly expanded with better AI models and Extensions
     echo 2. Fooocus ~25-30GB - Includes JuggernaughtXL - Modern UI, optimized defaults, Pre-Trained Style selection, best results out-of-box for Savvy users ^(RECOMMENDED^)
-    echo 3. ComfyUI ~20GB - Includes a small Pack of Models/Extensions - Node-based Workflow Interface for Advanced Technical users to build and train their own Blueprints with Complete Control
+    echo 3. ComfyUI ~20GB - Includes our custom merge of models/extensions for Professional Video/Image Processing - Node-based Workflow Interface for ADVANCED users to build Blueprints with Complete Control
     echo.
     
     :GET_UI_CHOICE
@@ -454,8 +454,9 @@ if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
 ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
     set "WEBUI_PORT=8188"
     set "COMPOSE_FILE=docker\docker-compose.comfyui.yml"
-    set "CONTAINER_NAME=comfyui"
+    set "CONTAINER_NAME=comfyui_hybrid"  
     set "DATA_DIR=ComfyUI"
+    set "SKIP_DIR_CREATION=1"  
 ) else if /i "!WEBUI_TYPE!"=="FOOOCUS" (
     set "WEBUI_PORT=7865"
     set "COMPOSE_FILE=docker\docker-compose.fooocus.yml"
@@ -480,7 +481,7 @@ if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
         set UI_INSTALLED=1
     )
 ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
-    if exist "!DATA_DIR!\storage" (
+    if exist "!DATA_DIR!\models" (
         set UI_INSTALLED=1
     )
 )
@@ -496,22 +497,22 @@ if !UI_INSTALLED! equ 0 (
     if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
         echo Stable Diffusion WebUI ^(AUTOMATIC1111^) needs to be set up.
         echo.
-        echo Download size: ~5-7 GB ^(includes Stable Diffusion v1.5 only^)
+        echo Download size: ~5-7 GB ^(includes Stable Diffusion v1.5 only - Expandable to your hardware limit^)
         echo Estimated time: 3-6 minutes
     ) else if /i "!WEBUI_TYPE!"=="FOOOCUS" (
         echo Fooocus needs to be set up.
         echo.
-        echo Download size: ~15-20 GB ^(includes JuggernautXL and other models/style/training^)
+        echo Download size: ~15-20 GB ^(includes JuggernautXL and other models/style/training - Expandable only with XL models^)
         echo Estimated time: 6-12 minutes
     ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
         echo ComfyUI needs to be set up.
         echo.
-        echo Download size: ~25-30 GB ^(This is a MegaPack of models for professional quality use^)
+        echo Download size: ~25-30 GB ^(This is our custom merge of models for professional Video and Image use - Infinitely Expandable^)
         echo Estimated time: 10-20 minutes
     )
     
     echo.
-    choice /C YN /N /M "Would you like to download and install !WEBUI_TYPE! now? [Y/N]: "
+    choice /C YN /N /M "Would you like to download !WEBUI_TYPE! now? [Y/N]: "
     if errorlevel 2 (
         echo.
         echo [*] Installation cancelled
@@ -542,7 +543,8 @@ if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
 ) else if /i "!WEBUI_TYPE!"=="FOOOCUS" (
     if not exist "Fooocus\data" mkdir "Fooocus\data"
 ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
-    if not exist "ComfyUI\storage" mkdir "ComfyUI\storage"
+    REM Directory creation handled by setupcomfyui.bat
+    echo [*] ComfyUI directories will be created by the setup script
 )
 
 echo [OK] Directories ready
@@ -551,7 +553,7 @@ echo.
 REM ============================================================
 REM STEP 5: Check container and port status
 REM ============================================================
-echo [STEP 5/6] Checking system status...
+echo [STEP 5/6] Checking container and port status...
 
 REM First, check if our container exists and get its port
 set CONTAINER_RUNNING=0
@@ -616,7 +618,7 @@ if %errorlevel% equ 0 (
     
     if "!port_choice!"=="1" (
         echo [*] Continuing with normal setup...
-        goto PULL_CONTAINER
+        goto HANDLE_COMFYUI
     ) else if "!port_choice!"=="2" (
         exit /b 0
     ) else (
@@ -628,7 +630,7 @@ if %errorlevel% equ 0 (
 )
 
 echo [*] No running container found - proceeding with setup
-goto PULL_CONTAINER
+goto HANDLE_COMFYUI
 
 :SHOW_MENU
 echo.
@@ -639,7 +641,7 @@ echo.
 echo 1. Open in browser again
 echo 2. Show container logs
 echo 3. Restart container
-echo 4. Delete and recreate container ^(use if broken^)
+echo 4. Delete and recreate container ^(use if still broken after a full system restart^)
 echo 5. Exit
 echo.
 set "container_choice="
@@ -670,16 +672,73 @@ if "!container_choice!"=="1" (
         echo [WARNING] Failed to remove container, attempting to continue... ^(You can check if it exists in Docker Desktop^)
     )
     echo [*] Creating new container...
-    goto PULL_CONTAINER
+    goto HANDLE_COMFYUI
 ) else if "!container_choice!"=="5" (
     exit /b 0
 ) else (
     goto SUCCESS_MESSAGE
 )
 
+:HANDLE_COMFYUI
+REM ============================================================
+REM STEP 6: Handle ComfyUI setup if selected
+REM ============================================================
+if /i "!WEBUI_TYPE!"=="COMFYUI" (
+    echo.
+    echo ============================================================
+    echo [STEP 6/6] Setting up ComfyUI...
+    echo ============================================================
+    echo.
+    
+    REM Call setupcomfyui.bat from Docker directory
+    pushd "%~dp0Docker"
+    call setupcomfyui.bat
+    set "SETUP_RESULT=!errorlevel!"
+    popd
+    
+    if !SETUP_RESULT! neq 0 (
+        :RETRY_PROMPT
+        echo.
+        echo ============================================================
+        echo [ERROR] ComfyUI setup failed with error code: !SETUP_RESULT!
+        echo ============================================================
+        echo.
+        echo What would you like to do?
+        echo   1. Retry the setup
+        echo   2. Choose a different UI
+        echo   3. Exit
+        echo.
+        set "retry_choice="
+        set /p "retry_choice=Enter your choice (1-3): "
+        
+        if "!retry_choice!"=="1" (
+            echo.
+            echo [*] Retrying ComfyUI setup...
+            pushd "%~dp0Docker"
+            call setupcomfyui.bat
+            set "SETUP_RESULT=!errorlevel!"
+            popd
+            if !SETUP_RESULT! neq 0 goto RETRY_PROMPT
+        ) else if "!retry_choice!"=="2" (
+            set "WEBUI_TYPE="
+            goto UI_SELECTION_MENU
+        ) else if "!retry_choice!"=="3" (
+            exit /b 1
+        ) else (
+            echo [ERROR] Invalid choice. Please enter 1, 2, or 3.
+            timeout /t 1 >nul
+            goto RETRY_PROMPT
+        )
+    )
+    
+    echo [OK] ComfyUI setup complete
+    echo.
+    goto HEALTH_CHECK_LOOP
+)
+
 :PULL_CONTAINER
 REM ============================================================
-REM STEP 6: Pull latest image and start container
+REM STEP 6: Pull latest image and start container (for non-ComfyUI UIs)
 REM ============================================================
 title AI WebUI Launcher - Starting !WEBUI_TYPE!...
 echo.
@@ -749,6 +808,7 @@ echo.
 REM ============================================================
 REM Health Check and Browser Launch
 REM ============================================================
+:HEALTH_CHECK_LOOP
 title AI WebUI Launcher - Waiting for !WEBUI_TYPE! to be ready...
 echo [*] Waiting for !WEBUI_TYPE! to be ready...
 echo [*] Performing health checks...
@@ -770,7 +830,7 @@ REM Health check loop - try for up to 1 minute
 set HEALTH_RETRIES=0
 set SERVICE_READY=0
 
-:HEALTH_CHECK_LOOP
+:HEALTH_CHECK_RETRY
 timeout /t 5 /nobreak >nul
 
 REM Check if curl is available
@@ -778,7 +838,9 @@ curl --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo [!] Health check unavailable ^(curl not found^)
     echo [*] Opening webpage in 60 seconds... The service is starting up. Please wait a moment.
-    timeout /t 60 /nobreak >nul
+    timeout /t 30 /nobreak >nul
+    echo [*] Opening webpage in 30 seconds... The service is starting up. Please wait a moment.
+    timeout /t 30 /nobreak >nul
     goto HEALTH_CHECK_DONE
 )
 
@@ -792,14 +854,16 @@ if %errorlevel% equ 0 (
 set /a HEALTH_RETRIES+=1
 echo [*] Service not ready yet... ^(attempt !HEALTH_RETRIES!/12^)
 
-if !HEALTH_RETRIES! lss 12 goto HEALTH_CHECK_LOOP
+if !HEALTH_RETRIES! lss 12 goto HEALTH_CHECK_RETRY
 
 REM If health check times out after 1 minute, wait 60 more seconds
 echo.
 echo [!] Service did not respond to health checks after 1 minute
 echo [*] Opening webpage in 60 seconds...
 echo [*] The service is starting up. Please wait a moment.
-timeout /t 60 /nobreak >nul
+timeout /t 30 /nobreak >nul
+echo [*] Opening webpage in 30 seconds...
+timeout /t 30 /nobreak >nul
 
 :HEALTH_CHECK_DONE
 

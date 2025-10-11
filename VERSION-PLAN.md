@@ -16,6 +16,7 @@
 - [ ] Add download resumption support
 - [ ] Add disk space verification before downloads
 - [ ] Add network connectivity checks
+- [ ] Add Support for linking models from the other AI UIs, so the file structure is sound and the models are accessible by all UIs.
 
 ### 1.3 Logging System
 - [ ] Implement structured logging to `logs/` directory

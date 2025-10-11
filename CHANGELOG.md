@@ -2,7 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.0] - 2025-10-08
+## [1.1.3] - 2025-10-10
+### Added
+- **ComfyUI Integration**: Complete workflow integration with Start-WebUI.bat
+- **Setup Script**: New `setupcomfyui.bat` for handling ComfyUI installation and configuration
+- **Error Handling**: Improved error recovery and user feedback during ComfyUI setup
+- **Health Checks**: Enhanced service readiness verification
+
+### Changed
+- **Start-WebUI.bat**: 
+  - Fixed ComfyUI workflow to ensure all operations flow through the main terminal
+  - Added proper error handling with retry options for setup failures
+  - Improved health check loop implementation
+- **Docker Configuration**: 
+  - Updated `dockerfile_comfyuihybrid` with better tooling and permissions
+  - Optimized `docker-compose.comfyui.yml` for better container management
+
+### Fixed
+- Resolved issues with directory handling in setup scripts
+- Fixed container startup sequence for better reliability
+- Addressed permission issues with mounted volumes
+
+## [1.1.2] - 2025-10-08
 ### Added
 - **Improved Port Management**: Better handling of port conflicts with clear user guidance
 - **Container Management**: Enhanced container status checking and recovery
