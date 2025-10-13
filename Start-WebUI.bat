@@ -453,10 +453,9 @@ if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
     set "DATA_DIR=Automatic1111"
 ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
     set "WEBUI_PORT=8188"
-    set "COMPOSE_FILE=docker\docker-compose.comfyui.yml"
+    set "COMPOSE_FILE=docker\ComfyUI-Docker\docker-compose.comfyui.yml"
     set "CONTAINER_NAME=comfyui_hybrid"  
     set "DATA_DIR=ComfyUI"
-    set "SKIP_DIR_CREATION=1"  
 ) else if /i "!WEBUI_TYPE!"=="FOOOCUS" (
     set "WEBUI_PORT=7865"
     set "COMPOSE_FILE=docker\docker-compose.fooocus.yml"
@@ -594,6 +593,8 @@ if %errorlevel% equ 0 (
         docker start !CONTAINER_NAME! >nul 2>&1
         if !errorlevel! equ 0 (
             echo [OK] Container started successfully
+            echo [*] Waiting 5 seconds for container to initialize...
+            timeout /t 5 /nobreak >nul
             goto SHOW_MENU
         )
     )
@@ -735,7 +736,11 @@ if /i "!WEBUI_TYPE!"=="COMFYUI" (
             exit /b 1
         )
     )
-    
+if /i "!WEBUI_TYPE!"=="COMFYUI" (
+    REM ComfyUI portable runs in foreground, script ends here
+    REM The setupcomfyui.bat will show all output and never return
+    exit /b 0
+)
     echo [OK] ComfyUI setup complete
     echo.
     
@@ -765,7 +770,7 @@ echo.
 echo ============================================================
 
 REM Run docker pull and show its output directly
-call !COMPOSE_CMD! -f !COMPOSE_FILE! pull
+call !COMPOSE_CMD! -p ai-webui -f !COMPOSE_FILE! pull
 set PULL_RESULT=!errorlevel!
 
 REM Check if pull was successful
@@ -783,7 +788,7 @@ echo [*] Starting container...
 echo [*] This may take a few minutes on first run...
 echo.
 
-!COMPOSE_CMD! -f !COMPOSE_FILE! up -d 2>docker-error.log
+!COMPOSE_CMD! -p ai-webui -f !COMPOSE_FILE! up -d 2>docker-error.log
 if %errorlevel% neq 0 (
     echo.
     echo ============================================================
@@ -830,8 +835,16 @@ REM STEP 7: Start the container (for non-ComfyUI UIs)
 REM ============================================================
 if /i not "!WEBUI_TYPE!"=="COMFYUI" (
     echo [*] Starting !WEBUI_TYPE! container...
-    docker compose -f "!COMPOSE_FILE!" up -d
-    if %errorlevel% neq 0 (
+    docker compose -p ai-webui -f "!COMPOSE_FILE!" up -d
+    
+    REM Wait a moment for container to initialize
+    timeout /t 2 /nobreak >nul
+    
+    REM Verify container is actually running
+    docker ps --filter "name=!CONTAINER_NAME!" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
+    set "DOCKER_START_RESULT=!errorlevel!"
+    
+    if !DOCKER_START_RESULT! neq 0 (
         echo.
         echo ============================================================
         echo [ERROR] Failed to start !WEBUI_TYPE! container
@@ -859,7 +872,7 @@ if /i "!WEBUI_TYPE!"=="COMFYUI" (
         echo [*] Please check Docker logs for more information: docker logs comfyui_hybrid
         pause
         exit /b 1
-    }
+    )
     echo [OK] ComfyUI container is running
     echo.
 )
@@ -929,7 +942,6 @@ if exist "docker-error-retry.log" del "docker-error-retry.log" >nul 2>&1
 
 :SUCCESS_MESSAGE
 title AI WebUI Launcher - !WEBUI_TYPE! is Ready!
-cls
 echo.
 echo ============================================================
 echo   SUCCESS: !WEBUI_TYPE! is Running!
