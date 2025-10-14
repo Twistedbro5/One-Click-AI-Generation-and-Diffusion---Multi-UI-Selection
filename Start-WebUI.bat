@@ -36,7 +36,7 @@ timeout /t 2 /nobreak >nul
 
 :PREREQUISITES_CHECK
 REM ============================================================
-REM STEP 1: Check Prerequisites (Git and Docker)
+REM STEP 1: Check Git (always needed)
 REM ============================================================
 title AI WebUI Launcher - Checking Prerequisites...
 cls
@@ -49,8 +49,7 @@ echo [STEP 1/6] Checking prerequisites...
 echo.
 
 set GIT_INSTALLED=0
-set DOCKER_INSTALLED=0
-set NEED_INSTALL=0
+set NEED_GIT_INSTALL=0
 
 REM Check for Git
 echo [*] Checking for Git...
@@ -60,52 +59,39 @@ if %errorlevel% equ 0 (
     set GIT_INSTALLED=1
 ) else (
     echo [!] Git is NOT installed
-    set NEED_INSTALL=1
-)
-
-REM Check for Docker
-echo [*] Checking for Docker...
-docker --version >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [OK] Docker is installed
-    set DOCKER_INSTALLED=1
-) else (
-    echo [!] Docker is NOT installed
-    set NEED_INSTALL=1
+    set NEED_GIT_INSTALL=1
 )
 
 echo.
 
-REM If prerequisites are missing, offer to install
-if !NEED_INSTALL! equ 1 (
+REM If Git is missing, offer to install
+if !NEED_GIT_INSTALL! equ 1 (
     echo ============================================================
-    echo   Prerequisites Required
+    echo   Git Required
     echo ============================================================
     echo.
-    echo The following tools are required to use this program:
+    echo Git is required for all AI WebUIs to function properly.
     echo.
-    if !GIT_INSTALLED! equ 0 echo   - Git ^(version control^)  ~ 350 MB
-    if !DOCKER_INSTALLED! equ 0 echo   - Docker Desktop ^(container UI^)  ~ 5 GB
+    echo   - Git (version control)  ~ 350 MB
     echo.
-    echo I can install these for you quickly and safely.
+    echo I can install it for you quickly and safely.
     echo.
-    choice /C YN /N /M "Would you like me to install the missing prerequisites? [Y/N]: "
+    choice /C YN /N /M "Would you like me to install Git? [Y/N]: "
     if errorlevel 2 goto PREREQUISITES_DECLINED
     
     echo.
-    echo [*] Starting installation process...
+    echo [*] Starting Git installation...
     echo.
     
     REM Check if winget is available
-    echo [*] Checking for Windows Package Manager ^(winget^)...
+    echo [*] Checking for Windows Package Manager (winget)...
     winget --version >nul 2>&1
     if !errorlevel! neq 0 (
-        echo [ERROR] Windows Package Manager ^(winget^) is not available
+        echo [ERROR] Windows Package Manager (winget) is not available
         echo [*] Winget requires Windows 10 1809 or later
         echo.
-        echo ALTERNATIVE: Install manually then Run Start-WebUI again. Get them from:
-        if !GIT_INSTALLED! equ 0 echo   - Git: https://git-scm.com/
-        if !DOCKER_INSTALLED! equ 0 echo   - Docker Desktop: https://www.docker.com/products/docker-desktop/
+        echo ALTERNATIVE: Install manually then Run Start-WebUI again. Get it from:
+        echo   - Git: https://git-scm.com/
         echo.
         pause
         exit /b 1
@@ -113,167 +99,30 @@ if !NEED_INSTALL! equ 1 (
     echo [OK] Winget is available
     echo.
     
-    REM Install Git if needed
-    if !GIT_INSTALLED! equ 0 (
-        echo [*] Installing Git using Windows Package Manager...
-        winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
-        
-        REM Add a small delay to ensure installation completes
-        timeout /t 3 /nobreak >nul
-        
-        REM Refresh environment variables
-        call :RefreshEnv
-        
-        REM Verify installation
-        git --version >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo [OK] Git installed successfully
-            set GIT_INSTALLED=1
-        ) else (
-            echo [ERROR] Git installation may have failed
-            echo [*] You may need to restart your computer
-            echo [*] Or install Git manually from: https://git-scm.com/
-        )
-        echo.
-    )
+    REM Install Git
+    echo [*] Installing Git using Windows Package Manager...
+    winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
     
-    REM Install Docker if needed
-    if !DOCKER_INSTALLED! equ 0 (
-        echo [*] Installing Docker Desktop using Windows Package Manager...
-        echo [!] This may take several minutes...
-        winget install --id Docker.DockerDesktop -e --source winget --accept-package-agreements --accept-source-agreements
-        
-        REM Add a small delay to ensure installation completes
-        timeout /t 5 /nobreak >nul
-        
-        REM Refresh environment variables
-        call :RefreshEnv
-        
-        REM Verify installation
-        docker --version >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo [OK] Docker Desktop installed successfully
-            set DOCKER_INSTALLED=1
-        ) else (
-            echo [ERROR] Docker Desktop installation may have failed
-            echo [*] You may need to restart your computer
-            echo [*] Or install Docker Desktop manually from: https://www.docker.com/products/docker-desktop/
-        )
-        echo.
-    )
+    REM Add a small delay to ensure installation completes
+    timeout /t 3 /nobreak >nul
     
-    REM Final check
-    if !GIT_INSTALLED! equ 0 goto PREREQUISITES_MISSING
-    if !DOCKER_INSTALLED! equ 0 goto PREREQUISITES_MISSING
-)
-
-REM Track if anything requiring restart was installed
-set NEED_RESTART=0
-set NEED_SCRIPT_RESTART=0
-set WSL_INSTALLED=0
-set VMP_ENABLED=0
-
-REM ============================================================
-REM Check WSL 2 Installation
-REM ============================================================
-echo [*] Checking for WSL 2...
-
-REM Check if wsl.exe exists and is accessible
-where wsl >nul 2>&1
-if !errorlevel! neq 0 (
-    echo [!] WSL 2 is NOT installed
-    echo [*] Installing WSL 2...
-    echo [!] This may take several minutes and requires a restart...
-    wsl --install --no-distribution
+    REM Refresh environment variables
+    call :RefreshEnv
+    
+    REM Verify installation
+    git --version >nul 2>&1
     if !errorlevel! equ 0 (
-        echo [OK] WSL 2 installed successfully
-        set WSL_INSTALLED=1
-        set NEED_RESTART=1
+        echo [OK] Git installed successfully
+        set GIT_INSTALLED=1
     ) else (
-        echo [WARNING] WSL 2 installation may have failed
-        echo [INFO] To install manually:
-        echo        1. Open PowerShell as Administrator
-        echo        2. Run: wsl --install --no-distribution
-        echo        3. Restart your computer
+        echo [ERROR] Git installation may have failed
+        echo [*] You may need to restart your computer
+        echo [*] Or install Git manually from: https://git-scm.com/
     )
     echo.
-) else (
-    REM WSL command exists, check if it's actually working
-    wsl --status >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo [OK] WSL 2 is installed and working
-    ) else (
-        echo [WARNING] WSL is installed but may not be configured properly
-        echo [INFO] Attempting to initialize WSL...
-        wsl --install --no-distribution >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo [OK] WSL initialized
-        ) else (
-            echo [WARNING] WSL may need manual configuration
-            echo [INFO] If Docker fails, try: wsl --update
-        )
-    )
-)
-
-REM ============================================================
-REM Check Virtual Machine Platform
-REM ============================================================
-echo [*] Checking Virtual Machine Platform...
-
-REM If WSL 2 is working, VMP must be enabled (it's a dependency)
-wsl --status >nul 2>&1
-if !errorlevel! equ 0 (
-    echo [OK] Virtual Machine Platform is enabled ^(verified via WSL^)
-) else (
-    REM WSL not working, but that's okay - try alternative check
-    REM Check if VMP is enabled via systeminfo (works without admin)
-    systeminfo | findstr /C:"Hyper-V Requirements" >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo [OK] Virtualization capabilities detected
-    ) else (
-        echo [INFO] Cannot verify Virtual Machine Platform status...
-        echo [INFO] If Docker fails to start later, you may need to enable it:
-        echo        1. Press Win+R ^(or search "Run" in Start Menu^)
-        echo        2. Type: optionalfeatures
-        echo        3. Press Enter
-        echo        4. Scroll down and check "Virtual Machine Platform"
-        echo        5. Click OK and restart your computer
-        echo.
-        echo [*] Continuing anyway - if Docker is installed, VMP is likely enabled
-    )
-)
-
-echo.
-
-REM ============================================================
-REM Handle restarts
-REM ============================================================
-if !NEED_INSTALL! equ 1 (
-    REM Something was installed, determine what kind of restart is needed
-    if !DOCKER_INSTALLED! equ 1 set NEED_RESTART=1
-    if !WSL_INSTALLED! equ 1 set NEED_RESTART=1
-    if !VMP_ENABLED! equ 1 set NEED_RESTART=1
     
-    REM If only Git was installed and nothing else changed
-    if !GIT_INSTALLED! equ 1 if !NEED_RESTART! equ 0 set NEED_SCRIPT_RESTART=1
-    
-    if !NEED_RESTART! equ 1 (
-        echo ============================================================
-        echo   System Restart Required
-        echo ============================================================
-        echo.
-        echo Changes were made that require a system restart:
-        if !DOCKER_INSTALLED! equ 1 echo   - Docker Desktop was installed
-        if !WSL_INSTALLED! equ 1 echo   - WSL 2 was installed
-        if !VMP_ENABLED! equ 1 echo   - Virtual Machine Platform was enabled
-        echo.
-        echo [!] Please restart your computer and run Start-WebUI.bat again.
-        echo.
-        pause
-        exit /b 0
-    )
-    
-    if !NEED_SCRIPT_RESTART! equ 1 (
+    REM Git requires script restart
+    if !GIT_INSTALLED! equ 1 (
         echo ============================================================
         echo   Restart Required
         echo ============================================================
@@ -284,80 +133,12 @@ if !NEED_INSTALL! equ 1 (
         echo.
         pause
         exit /b 0
-    )
-)
-
-echo [OK] All prerequisites are installed and configured
-echo.
-
-REM ============================================================
-REM Check if Docker is running and get Docker Compose
-REM ============================================================
-echo [*] Checking if Docker is running...
-docker info >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [OK] Docker is running
-) else (
-    echo [!] Docker is not running
-    echo [*] Attempting to start Docker Desktop...
-    
-    REM Try method 1: winget run
-    winget run Docker.DockerDesktop >nul 2>&1
-    timeout /t 3 /nobreak >nul
-    
-    docker info >nul 2>&1
-    if !errorlevel! neq 0 (
-        REM Try method 2: Direct executable with --minimized
-        if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
-            start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" --minimized
-            echo [*] Docker Desktop is starting...
-            echo [*] Waiting for Docker to initialize...
-            timeout /t 10 /nobreak >nul
-            
-            docker info >nul 2>&1
-            if !errorlevel! neq 0 (
-                echo [ERROR] Docker failed to start
-                echo.
-                echo SOLUTION:
-                echo 1. Manually open Docker Desktop from Start Menu
-                echo 2. Wait for Docker to fully start
-                echo 3. Run this script again
-                echo.
-                pause
-                exit /b 1
-            )
-        ) else (
-            echo [ERROR] Could not find Docker Desktop
-            echo [*] Start Docker or install Docker Desktop from: https://www.docker.com/products/docker-desktop/
-            pause
-            exit /b 1
-        )
-    )
-    
-    echo [OK] Docker is now running
-)
-
-echo [*] Detecting Docker Compose version...
-docker compose version >nul 2>&1
-if %errorlevel% equ 0 (
-    set "COMPOSE_CMD=docker compose"
-    echo [OK] Using Docker Compose V2
-) else (
-    docker-compose --version >nul 2>&1
-    if !errorlevel! equ 0 (
-        set "COMPOSE_CMD=docker-compose"
-        echo [OK] Using Docker Compose V1
     ) else (
-        echo [ERROR] Docker Compose not found
-        echo [*] Docker Compose should be included with Docker Desktop
-        echo.
-        echo SUGGESTIONS:
-        echo 1. Restart Docker Desktop
-        echo 2. Reinstall Docker Desktop
-        pause
-        exit /b 1
+        goto PREREQUISITES_MISSING
     )
 )
+
+echo [OK] Git is ready
 echo.
 
 REM ============================================================
@@ -405,9 +186,9 @@ if not defined WEBUI_TYPE (
     echo Please select an option:
     echo.
     echo Defaults:
-    echo 1. AUTOMATIC1111 ~5GB - Includes Stable Diffusion 1.5 - Simple, Small, Beginner Friendly for low specs - Can be vastly expanded with better AI models and Extensions
-    echo 2. Fooocus ~25-30GB - Includes JuggernaughtXL - Modern UI, optimized defaults, Pre-Trained Style selection, best results out-of-box for Savvy users ^(RECOMMENDED^)
-    echo 3. ComfyUI ~20GB - Includes our custom merge of models/extensions for Professional Video/Image Processing - Node-based Workflow Interface for ADVANCED users to build Blueprints with Complete Control
+    echo 1. AUTOMATIC1111 ~5GB - Includes Stable Diffusion 1.5 - Simple, Small, Beginner Friendly for low specs - Can be expanded with better AI models and Extensions
+    echo 2. Fooocus ~25-30GB - Includes JuggernaughtXL - Modern UI, optimized defaults, Pre-Trained Style selection, best results out-of-box (RECOMMENDED)
+    echo 3. ComfyUI ~6GB - Includes the Base for Professional Video/Image/Music/Animation Processing - Node-based Workflow Interface for ADVANCED users and hardware to build Blueprints with Complete Control
     echo.
     
     :GET_UI_CHOICE
@@ -451,16 +232,274 @@ if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
     set "COMPOSE_FILE=docker\docker-compose.automatic1111.yml"
     set "CONTAINER_NAME=stable-diffusion"
     set "DATA_DIR=Automatic1111"
+    set "NEEDS_DOCKER=1"
 ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
     set "WEBUI_PORT=8188"
     set "COMPOSE_FILE=docker\ComfyUI-Docker\docker-compose.comfyui.yml"
     set "CONTAINER_NAME=comfyui_hybrid"  
     set "DATA_DIR=ComfyUI"
+    set "NEEDS_DOCKER=0"
 ) else if /i "!WEBUI_TYPE!"=="FOOOCUS" (
     set "WEBUI_PORT=7865"
     set "COMPOSE_FILE=docker\docker-compose.fooocus.yml"
     set "CONTAINER_NAME=fooocus"
     set "DATA_DIR=Fooocus"
+    set "NEEDS_DOCKER=1"
+)
+
+REM ============================================================
+REM STEP 2.5: Check Docker (only if needed)
+REM ============================================================
+if !NEEDS_DOCKER! equ 1 (
+    echo [STEP 2.5/6] Checking Docker (required for !WEBUI_TYPE!)...
+    echo.
+    
+    set DOCKER_INSTALLED=0
+    set NEED_DOCKER_INSTALL=0
+    set NEED_RESTART=0
+    set WSL_INSTALLED=0
+    set VMP_ENABLED=0
+    
+    REM Check for Docker
+    echo [*] Checking for Docker...
+    docker --version >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo [OK] Docker is installed
+        set DOCKER_INSTALLED=1
+    ) else (
+        echo [!] Docker is NOT installed
+        set NEED_DOCKER_INSTALL=1
+    )
+    
+    echo.
+    
+    REM If Docker is missing, offer to install
+    if !NEED_DOCKER_INSTALL! equ 1 (
+        echo ============================================================
+        echo   Docker Desktop Required
+        echo ============================================================
+        echo.
+        echo Docker Desktop is required to run !WEBUI_TYPE!.
+        echo.
+        echo   - Docker Desktop (container platform)  ~ 5 GB
+        echo.
+        echo I can install it for you quickly and safely.
+        echo.
+        choice /C YN /N /M "Would you like me to install Docker Desktop? [Y/N]: "
+        if errorlevel 2 goto DOCKER_DECLINED
+        
+        echo.
+        echo [*] Starting Docker installation...
+        echo.
+        
+        REM Check if winget is available
+        echo [*] Checking for Windows Package Manager (winget)...
+        winget --version >nul 2>&1
+        if !errorlevel! neq 0 (
+            echo [ERROR] Windows Package Manager (winget) is not available
+            echo.
+            echo ALTERNATIVE: Install manually then Run Start-WebUI again:
+            echo   - Docker Desktop: https://www.docker.com/products/docker-desktop/
+            echo.
+            pause
+            exit /b 1
+        )
+        echo [OK] Winget is available
+        echo.
+        
+        REM Install Docker
+        echo [*] Installing Docker Desktop using Windows Package Manager...
+        echo [!] This may take several minutes...
+        winget install --id Docker.DockerDesktop -e --source winget --accept-package-agreements --accept-source-agreements
+        
+        REM Add a small delay to ensure installation completes
+        timeout /t 5 /nobreak >nul
+        
+        REM Refresh environment variables
+        call :RefreshEnv
+        
+        REM Verify installation
+        docker --version >nul 2>&1
+        if !errorlevel! equ 0 (
+            echo [OK] Docker Desktop installed successfully
+            set DOCKER_INSTALLED=1
+            set NEED_RESTART=1
+        ) else (
+            echo [ERROR] Docker Desktop installation may have failed
+            echo [*] You may need to restart your computer
+            echo [*] Or install Docker Desktop manually from: https://www.docker.com/products/docker-desktop/
+        )
+        echo.
+    )
+    
+    REM ============================================================
+    REM Check WSL 2 Installation
+    REM ============================================================
+    echo [*] Checking for WSL 2...
+    
+    REM Check if wsl.exe exists and is accessible
+    where wsl >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo [!] WSL 2 is NOT installed
+        echo [*] Installing WSL 2...
+        echo [!] This may take several minutes and requires a restart...
+        wsl --install --no-distribution
+        if !errorlevel! equ 0 (
+            echo [OK] WSL 2 installed successfully
+            set WSL_INSTALLED=1
+            set NEED_RESTART=1
+        ) else (
+            echo [WARNING] WSL 2 installation may have failed
+            echo [INFO] To install manually:
+            echo        1. Open PowerShell as Administrator
+            echo        2. Run: wsl --install --no-distribution
+            echo        3. Restart your computer
+        )
+        echo.
+    ) else (
+        REM WSL command exists, check if it's actually working
+        wsl --status >nul 2>&1
+        if !errorlevel! equ 0 (
+            echo [OK] WSL 2 is installed and working
+        ) else (
+            echo [WARNING] WSL is installed but may not be configured properly
+            echo [INFO] Attempting to initialize WSL...
+            wsl --install --no-distribution >nul 2>&1
+            if !errorlevel! equ 0 (
+                echo [OK] WSL initialized
+            ) else (
+                echo [WARNING] WSL may need manual configuration
+                echo [INFO] If Docker fails, try: wsl --update
+            )
+        )
+    )
+    
+    REM ============================================================
+    REM Check Virtual Machine Platform
+    REM ============================================================
+    echo [*] Checking Virtual Machine Platform...
+    
+    REM If WSL 2 is working, VMP must be enabled (it's a dependency)
+    wsl --status >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo [OK] Virtual Machine Platform is enabled (verified via WSL)
+    ) else (
+        REM WSL not working, but that's okay - try alternative check
+        REM Check if VMP is enabled via systeminfo (works without admin)
+        systeminfo | findstr /C:"Hyper-V Requirements" >nul 2>&1
+        if !errorlevel! equ 0 (
+            echo [OK] Virtualization capabilities detected
+        ) else (
+            echo [INFO] Cannot verify Virtual Machine Platform status...
+            echo [INFO] If Docker fails to start later, you may need to enable it:
+            echo        1. Press Win+R (or search "Run" in Start Menu)
+            echo        2. Type: optionalfeatures
+            echo        3. Press Enter
+            echo        4. Scroll down and check "Virtual Machine Platform"
+            echo        5. Click OK and restart your computer
+            echo.
+            echo [*] Continuing anyway - if Docker is installed, VMP is likely enabled
+        )
+    )
+    
+    echo.
+    
+    REM ============================================================
+    REM Handle restarts
+    REM ============================================================
+    if !NEED_RESTART! equ 1 (
+        echo ============================================================
+        echo   System Restart Required
+        echo ============================================================
+        echo.
+        echo Changes were made that require a system restart:
+        if !DOCKER_INSTALLED! equ 1 echo   - Docker Desktop was installed
+        if !WSL_INSTALLED! equ 1 echo   - WSL 2 was installed
+        if !VMP_ENABLED! equ 1 echo   - Virtual Machine Platform was enabled
+        echo.
+        echo [!] Please restart your computer and run Start-WebUI.bat again.
+        echo.
+        pause
+        exit /b 0
+    )
+    
+    if !NEED_DOCKER_INSTALL! equ 1 if !DOCKER_INSTALLED! equ 0 goto PREREQUISITES_MISSING
+    
+    echo [OK] Docker prerequisites are ready
+    echo.
+    
+    REM ============================================================
+    REM Check if Docker is running and get Docker Compose
+    REM ============================================================
+    echo [*] Checking if Docker is running...
+    docker info >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo [OK] Docker is running
+    ) else (
+        echo [!] Docker is not running
+        echo [*] Attempting to start Docker Desktop...
+        
+        REM Try method 1: winget run
+        winget run Docker.DockerDesktop >nul 2>&1
+        timeout /t 3 /nobreak >nul
+        
+        docker info >nul 2>&1
+        if !errorlevel! neq 0 (
+            REM Try method 2: Direct executable with --minimized
+            if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
+                start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" --minimized
+                echo [*] Docker Desktop is starting...
+                echo [*] Waiting for Docker to initialize...
+                timeout /t 10 /nobreak >nul
+                
+                docker info >nul 2>&1
+                if !errorlevel! neq 0 (
+                    echo [ERROR] Docker failed to start
+                    echo.
+                    echo SOLUTION:
+                    echo 1. Manually open Docker Desktop from Start Menu
+                    echo 2. Wait for Docker to fully start
+                    echo 3. Run this script again
+                    echo.
+                    pause
+                    exit /b 1
+                )
+            ) else (
+                echo [ERROR] Could not find Docker Desktop
+                echo [*] Start Docker or install Docker Desktop from: https://www.docker.com/products/docker-desktop/
+                pause
+                exit /b 1
+            )
+        )
+        
+        echo [OK] Docker is now running
+    )
+    
+    echo [*] Detecting Docker Compose version...
+    docker compose version >nul 2>&1
+    if %errorlevel% equ 0 (
+        set "COMPOSE_CMD=docker compose"
+        echo [OK] Using Docker Compose V2
+    ) else (
+        docker-compose --version >nul 2>&1
+        if !errorlevel! equ 0 (
+            set "COMPOSE_CMD=docker-compose"
+            echo [OK] Using Docker Compose V1
+        ) else (
+            echo [ERROR] Docker Compose not found
+            echo [*] Docker Compose should be included with Docker Desktop
+            echo.
+            echo SUGGESTIONS:
+            echo 1. Restart Docker Desktop
+            echo 2. Reinstall Docker Desktop
+            pause
+            exit /b 1
+        )
+    )
+    echo.
+) else (
+    echo [*] Docker not required for !WEBUI_TYPE!
+    echo.
 )
 
 REM ============================================================
@@ -480,7 +519,7 @@ if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
         set UI_INSTALLED=1
     )
 ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
-    if exist "!DATA_DIR!\models" (
+    if exist "!DATA_DIR!\ComfyUI_windows_portable_nvidia\run_nvidia_gpu.bat" (
         set UI_INSTALLED=1
     )
 )
@@ -494,20 +533,20 @@ if !UI_INSTALLED! equ 0 (
     echo.
     
     if /i "!WEBUI_TYPE!"=="AUTOMATIC1111" (
-        echo Stable Diffusion WebUI ^(AUTOMATIC1111^) needs to be set up.
+        echo Stable Diffusion WebUI (AUTOMATIC1111) needs to be set up.
         echo.
-        echo Download size: ~5-7 GB ^(includes Stable Diffusion v1.5 only - Expandable to your hardware limit^)
+        echo Download size: ~5-7 GB (includes Stable Diffusion v1.5 only - Expandable and works on low specs)
         echo Estimated time: 3-6 minutes
     ) else if /i "!WEBUI_TYPE!"=="FOOOCUS" (
         echo Fooocus needs to be set up.
         echo.
-        echo Download size: ~15-20 GB ^(includes JuggernautXL and other models/style/training - Expandable only with XL models^)
+        echo Download size: ~15-20 GB (includes JuggernautXL and style training - Expandable only with XL models - Great for 8GB VRAM or more)
         echo Estimated time: 6-12 minutes
     ) else if /i "!WEBUI_TYPE!"=="COMFYUI" (
         echo ComfyUI needs to be set up.
         echo.
-        echo Download size: ~25-30 GB ^(This is our custom merge of models for professional Video and Image use - Infinitely Expandable^)
-        echo Estimated time: 10-20 minutes
+        echo Download size: 5-7 GB (This is the Base for professional Image, Video, Music, Animation, and more - Infinitely Expandable via templates or manual download)
+        echo Estimated time: 5-10 minutes
     )
     
     echo.
@@ -550,8 +589,13 @@ echo [OK] Directories ready
 echo.
 
 REM ============================================================
-REM STEP 5: Check container and port status
+REM STEP 5: Check container and port status (Docker UIs only)
 REM ============================================================
+if /i "!WEBUI_TYPE!"=="COMFYUI" (
+    REM ComfyUI doesn't use Docker, skip to setup
+    goto HANDLE_COMFYUI
+)
+
 echo [STEP 5/6] Checking container and port status...
 
 REM First, check if our container exists and get its port
@@ -571,7 +615,7 @@ if %errorlevel% equ 0 (
     
     REM If the port is different from expected, update it
     if not "!ACTUAL_PORT!"=="!WEBUI_PORT!" (
-        echo [INFO] Container is running on port !ACTUAL_PORT! ^(configured for !WEBUI_PORT!^)
+        echo [INFO] Container is running on port !ACTUAL_PORT! (configured for !WEBUI_PORT!)
         set "WEBUI_PORT=!ACTUAL_PORT!"
     )
     
@@ -610,8 +654,8 @@ if %errorlevel% equ 0 (
     echo   - The WebUI might already be running - check http://localhost:!WEBUI_PORT!
     echo   - Check Docker Desktop to ensure you dont already have a container running
     echo.
-    echo 1. Continue with normal setup ^(may change port later or close program already using it^)
-    echo 2. Exit ^(You can run Start-WebUI anytime to try again^)
+    echo 1. Continue with normal setup (may change port later or close program already using it)
+    echo 2. Exit (You can run Start-WebUI anytime to try again)
     echo.
     
     set "port_choice="
@@ -630,12 +674,7 @@ if %errorlevel% equ 0 (
 )
 
 echo [*] No running container found - proceeding with setup
-
-REM Skip to container start for non-ComfyUI types
-if /i not "!WEBUI_TYPE!"=="COMFYUI" (
-    goto START_CONTAINER
-)
-goto HANDLE_COMFYUI
+goto START_CONTAINER
 
 :SHOW_MENU
 echo.
@@ -646,7 +685,7 @@ echo.
 echo 1. Open in browser again
 echo 2. Show container logs
 echo 3. Restart container
-echo 4. Delete and recreate container ^(use if still broken after a full system restart^)
+echo 4. Delete and recreate container (use if still broken after a full system restart)
 echo 5. Exit
 echo.
 set "container_choice="
@@ -656,7 +695,7 @@ if "!container_choice!"=="1" (
     goto SUCCESS_MESSAGE
 ) else if "!container_choice!"=="2" (
     echo.
-    echo [*] Showing container logs ^(press Ctrl+C to return to menu^):
+    echo [*] Showing container logs (press Ctrl+C to return to menu):
     echo ============================================================
     docker logs -f !CONTAINER_NAME!
     echo ============================================================
@@ -674,14 +713,10 @@ if "!container_choice!"=="1" (
     echo [*] Removing existing container...
     docker rm -f !CONTAINER_NAME!
     if errorlevel 1 (
-        echo [WARNING] Failed to remove container, attempting to continue... ^(You can check if it exists in Docker Desktop^)
+        echo [WARNING] Failed to remove container, attempting to continue... (You can check if it exists in Docker Desktop)
     )
     echo [*] Creating new container...
-    if /i "!WEBUI_TYPE!"=="COMFYUI" (
-        goto HANDLE_COMFYUI
-    ) else (
-        goto START_CONTAINER
-    )
+    goto START_CONTAINER
 ) else if "!container_choice!"=="5" (
     exit /b 0
 ) else (
@@ -736,35 +771,22 @@ if /i "!WEBUI_TYPE!"=="COMFYUI" (
             exit /b 1
         )
     )
-if /i "!WEBUI_TYPE!"=="COMFYUI" (
+    
+    echo [OK] ComfyUI setup complete
+    echo.
+    
     REM ComfyUI portable runs in foreground, script ends here
     REM The setupcomfyui.bat will show all output and never return
     exit /b 0
 )
-    echo [OK] ComfyUI setup complete
-    echo.
-    
-    REM After successful setup, verify container is running
-    docker ps --filter "name=comfyui_hybrid" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"comfyui_hybrid" >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo [ERROR] ComfyUI container is not running after setup
-        echo [*] Please check Docker logs for more information
-        pause
-        exit /b 1
-    )
-    
-    REM Go straight to health check
-    goto HEALTH_CHECK_LOOP
-)
 
-:PULL_CONTAINER
+:START_CONTAINER
 REM ============================================================
-REM STEP 6: Pull latest image and start container (for non-ComfyUI UIs)
+REM STEP 7: Start the container (for Docker-based UIs)
 REM ============================================================
-title AI WebUI Launcher - Starting !WEBUI_TYPE!...
 echo.
 echo [STEP 6/6] Checking for updates and starting !WEBUI_TYPE!...
-echo [*] Checking for image updates ^(Docker will skip if already up-to-date^)...
+echo [*] Checking for image updates (Docker will skip if already up-to-date)...
 echo [*] This will show Docker's progress output...
 echo.
 echo ============================================================
@@ -813,9 +835,9 @@ if %errorlevel% neq 0 (
         echo.
         echo SUGGESTIONS:
         echo 1. Update NVIDIA GPU drivers from: https://www.nvidia.com/Download/index.aspx
-        echo 2. Enable GPU in Docker Desktop Settings ^(Settings - Resources - WSL Integration^)
+        echo 2. Enable GPU in Docker Desktop Settings (Settings - Resources - WSL Integration)
         echo 3. Restart Docker Desktop
-        echo 4. Check if you have WSL2 installed ^(wsl --status^)
+        echo 4. Check if you have WSL2 installed (wsl --status)
         echo 5. Run: wsl --update
         echo.
         pause
@@ -826,56 +848,29 @@ if %errorlevel% neq 0 (
 echo [OK] Container started successfully
 echo.
 
-REM ============================================================
-REM Health Check and Browser Launch
-REM ============================================================
-:START_CONTAINER
-REM ============================================================
-REM STEP 7: Start the container (for non-ComfyUI UIs)
-REM ============================================================
-if /i not "!WEBUI_TYPE!"=="COMFYUI" (
-    echo [*] Starting !WEBUI_TYPE! container...
-    docker compose -p ai-webui -f "!COMPOSE_FILE!" up -d
-    
-    REM Wait a moment for container to initialize
-    timeout /t 2 /nobreak >nul
-    
-    REM Verify container is actually running
-    docker ps --filter "name=!CONTAINER_NAME!" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
-    set "DOCKER_START_RESULT=!errorlevel!"
-    
-    if !DOCKER_START_RESULT! neq 0 (
-        echo.
-        echo ============================================================
-        echo [ERROR] Failed to start !WEBUI_TYPE! container
-        echo ============================================================
-        echo.
-        echo SUGGESTIONS:
-        echo 1. Check if port !WEBUI_PORT! is already in use
-        echo 2. Ensure Docker Desktop is running
-        echo 3. Check logs for more details: docker logs !CONTAINER_NAME!
-        echo.
-        pause
-        exit /b 1
-    )
-    echo [OK] Container started successfully
-    echo.
-)
+REM Wait a moment for container to initialize
+timeout /t 2 /nobreak >nul
 
-REM For ComfyUI, the container is already started by setupcomfyui.bat
-REM so we just verify it's running
-if /i "!WEBUI_TYPE!"=="COMFYUI" (
-    echo [*] Verifying ComfyUI container is running...
-    docker ps --filter "name=comfyui_hybrid" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"comfyui_hybrid" >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo [ERROR] ComfyUI container is not running after setup
-        echo [*] Please check Docker logs for more information: docker logs comfyui_hybrid
-        pause
-        exit /b 1
-    )
-    echo [OK] ComfyUI container is running
+REM Verify container is actually running
+docker ps --filter "name=!CONTAINER_NAME!" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /C:"!CONTAINER_NAME!" >nul 2>&1
+set "DOCKER_START_RESULT=!errorlevel!"
+
+if !DOCKER_START_RESULT! neq 0 (
     echo.
+    echo ============================================================
+    echo [ERROR] Failed to start !WEBUI_TYPE! container
+    echo ============================================================
+    echo.
+    echo SUGGESTIONS:
+    echo 1. Check if port !WEBUI_PORT! is already in use
+    echo 2. Ensure Docker Desktop is running
+    echo 3. Check logs for more details: docker logs !CONTAINER_NAME!
+    echo.
+    pause
+    exit /b 1
 )
+echo [OK] Container started successfully
+echo.
 
 :HEALTH_CHECK_LOOP
 title AI WebUI Launcher - Waiting for !WEBUI_TYPE! to be ready...
@@ -905,7 +900,7 @@ timeout /t 5 /nobreak >nul
 REM Check if curl is available
 curl --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [!] Health check unavailable ^(curl not found^)
+    echo [!] Health check unavailable (curl not found)
     echo [*] Opening webpage in 60 seconds... The service is starting up. Please wait a moment.
     timeout /t 30 /nobreak >nul
     echo [*] Opening webpage in 30 seconds... The service is starting up. Please wait a moment.
@@ -921,7 +916,7 @@ if %errorlevel% equ 0 (
 )
 
 set /a HEALTH_RETRIES+=1
-echo [*] Service not ready yet... ^(attempt !HEALTH_RETRIES!/12^)
+echo [*] Service not ready yet... (attempt !HEALTH_RETRIES!/12)
 
 if !HEALTH_RETRIES! lss 12 goto HEALTH_CHECK_RETRY
 
@@ -985,19 +980,36 @@ REM ============================================================
 :PREREQUISITES_DECLINED
 echo.
 echo ============================================================
-echo   Prerequisites Required
+echo   Prerequisites Declined
 echo ============================================================
 echo.
-echo Unfortunately, Git and Docker are required to run this application.
+echo You have chosen not to install the required prerequisites.
 echo.
-echo Please install them manually:
-echo   - Git: https://git-scm.com/
-echo   - Docker Desktop: https://www.docker.com/products/docker-desktop/
+echo To use this software, you will need to install Git manually:
 echo.
-echo After installation, run this script again.
+echo - Git: https://git-scm.com/download/win
+echo.
+echo After installing Git, please run this script again.
 echo.
 pause
-exit /b 1
+exit /b 0
+
+:DOCKER_DECLINED
+echo.
+echo ============================================================
+echo   Docker Declined
+echo ============================================================
+echo.
+echo You have chosen not to install Docker Desktop.
+echo.
+echo Docker is required for running !WEBUI_TYPE! in a container.
+echo You can install it manually from:
+echo https://www.docker.com/products/docker-desktop/
+echo.
+echo After installing Docker Desktop, please run this script again.
+echo.
+pause
+exit /b 0
 
 :PREREQUISITES_MISSING
 echo.

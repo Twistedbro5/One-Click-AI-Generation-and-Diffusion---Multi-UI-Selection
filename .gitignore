@@ -3,9 +3,15 @@
 /outputs/
 /extensions/
 /Modal Holder/
-/fooocus/
+/Fooocus/
 /ComfyUI/
 
+# Large binary files
+*.7z
+*.zip
+*.tar.gz
+*.tar
+*.rar
 
 # Configuration files
 .ui-config
