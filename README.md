@@ -1,16 +1,25 @@
-# Stable Diffusion Local Setup - Win11+Nvidia
+# AI Generation Suite - One-Click Local Setup
 
-**One-Click Solution** for running Stable Diffusion and other AI Models locally using Docker on Windows 11 with NVIDIA GPU support. This setup is containerized, user-friendly, and fully offline after initial setup.
+**All-in-One Solution** for running Stable Diffusion, ComfyUI, and Fooocus locally using Docker on Windows 11 with NVIDIA GPU support. Containerized, user-friendly, and fully offline after initial setup.
 
 ## Features
 
-✅ **One-Click Launch** - Just run `start-sd.bat` and everything is handled automatically  
-✅ **Comprehensive Error Handling** - Clear error messages with solutions, never closes on failure  
-✅ **Fully Offline** - After initial setup, works completely offline (no internet required)  
-✅ **Auto-Recovery** - Automatically attempts to start Docker Desktop if not running  
-✅ **Debug Mode** - Includes detailed diagnostic tool (`debug-sd.bat`)  
-✅ **Containerized** - Doesn't affect your system, everything stays in the Docker container  
-✅ **GPU Accelerated** - Optimized for NVIDIA GPUs with CUDA support  
+🚀 **Multi-UI Support** - Switch between Automatic1111, ComfyUI, and Fooocus with a single launcher  
+🎛️ **Unified Management** - Start, stop, and manage all AI services from one place  
+🔒 **Containerized** - Isolated environments that don't affect your system  
+⚡ **GPU Accelerated** - Optimized for NVIDIA GPUs with CUDA support  
+🔍 **Comprehensive Error Handling** - Clear error messages with solutions  
+📊 **System Monitoring** - Real-time resource usage and status  
+🔄 **Auto-Recovery** - Automatic service restarts and Docker management  
+📂 **Organized File Structure** - Clean separation of models, outputs, and configurations  
+
+## What's New (v1.1.3)
+
+- **Complete ComfyUI Integration** - Full support for ComfyUI with automatic setup
+- **Enhanced Error Recovery** - Better handling of service failures and edge cases
+- **Improved Health Checks** - More reliable service status monitoring
+- **Simplified Updates** - Easier maintenance and version management
+- **Better Documentation** - Clearer instructions and troubleshooting guides
 
 ## Prerequisites
 

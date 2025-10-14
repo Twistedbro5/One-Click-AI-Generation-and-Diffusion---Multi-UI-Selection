@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2025-10-13
+### Added
+- **Enhanced ComfyUI Setup**: Improved error handling and reliability in setupcomfyui.bat
+- **Automatic Port Management**: Better handling of port conflicts for all services
+- **System Resource Monitoring**: Added real-time monitoring of GPU/CPU usage
+- **Documentation Overhaul**: Complete rewrite of README with better organization and clarity
+
+### Changed
+- **Start-WebUI.bat**: 
+  - Streamlined UI selection process
+  - Improved error recovery and logging
+  - Better handling of service dependencies
+- **Docker Configuration**: 
+  - Optimized resource allocation
+  - Updated base images for better performance
+
+### Fixed
+- Resolved issues with service startup sequence
+- Fixed path handling in setup scripts
+- Addressed permission issues with mounted volumes
+
 ## [1.1.3] - 2025-10-10
 ### Added
 - **ComfyUI Integration**: Complete workflow integration with Start-WebUI.bat
