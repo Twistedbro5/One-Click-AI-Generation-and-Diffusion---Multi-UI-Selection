@@ -115,6 +115,15 @@ Close the Docker Desktop app, just the container, or run this in a Terminal:
 docker-compose down
 ```
 
+### How do I manage a running WebUI?
+- When the WebUI is running, the launcher now shows a menu with options to:
+  - Open in browser again
+  - View container logs
+  - Restart the container
+  - Delete and recreate the container (if broken)
+  - Exit
+- This makes it easier to troubleshoot without restarting the script.
+
 ### Troubleshooting:
 1. Run `debug-sd.bat` and read the messages
 2. Check the "Common Issues" section below

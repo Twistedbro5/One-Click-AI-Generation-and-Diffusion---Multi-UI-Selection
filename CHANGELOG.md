@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.5] - 2025-10-15
+### Added
+- **Interactive Container Management Menu**: New menu system for running containers allowing users to open in browser, view logs, restart, delete/recreate, or exit.
+- **Enhanced Health Checks**: Extended timeout for service readiness (up to 2 minutes) with better retry logic and fallback for missing tools like curl.
+- **Improved Port Conflict Handling**: Simplified and more user-friendly prompts for resolving port issues, with options to continue or exit.
+
+### Changed
+- **Docker Startup Logic**: Streamlined container startup process, including better error recovery, automatic retries, and clearer status messages.
+- **Script Structure**: Removed redundant code, simplified container checks, and improved overall flow for better reliability.
+- **Error Handling**: More robust handling of Docker failures, with automatic fixes and detailed troubleshooting suggestions.
+- **Health Check Loop Improvements**:
+  - Eliminated redundancy (e.g., removed unnecessary variables and duplicate messages).
+  - Streamlined flow: Quick container check, fallback wait if no curl, up to 24 retries (2 minutes), then open browser.
+  - Better time management: Consistent 2-minute timeout with single countdown for clarity.
+  - Improved messaging: Clearer feedback on service readiness and timeouts.
+  - Simplified logic: Linear flow with direct paths to success, *Reduced overall script size by ~25%*
+- **Container Management Enhancements**:
+  - Simplified flow: Consolidated checks, eliminated nested conditions, and removed redundant port detection.
+  - Better error handling: Auto-remove and recreate failed stopped containers with clear feedback.
+  - Improved user experience: Interactive menu using choice command for logs, restarts, etc., reducing complexity.
+  - More reliable: Fixed logic bugs, ensured predictable behavior, and better cleanup.
+
+### Fixed
+- Resolved invalid batch syntax errors (e.g., incorrect `set errorlevel` usage) that could cause script failures.
+- Fixed issues with container detection and port parsing for more accurate status reporting.
+- Addressed inconsistencies in Docker Compose command execution and error logging.
+
 ## [1.1.4] - 2025-10-13
 ### Added
 - **Enhanced ComfyUI Setup**: Improved error handling and reliability in setupcomfyui.bat

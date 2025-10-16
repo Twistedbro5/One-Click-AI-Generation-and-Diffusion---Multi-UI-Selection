@@ -13,13 +13,12 @@
 🔄 **Auto-Recovery** - Automatic service restarts and Docker management  
 📂 **Organized File Structure** - Clean separation of models, outputs, and configurations  
 
-## What's New (v1.1.3)
+## What's New (v1.1.5)
 
-- **Complete ComfyUI Integration** - Full support for ComfyUI with automatic setup
-- **Enhanced Error Recovery** - Better handling of service failures and edge cases
-- **Improved Health Checks** - More reliable service status monitoring
-- **Simplified Updates** - Easier maintenance and version management
-- **Better Documentation** - Clearer instructions and troubleshooting guides
+- **Interactive Container Management**: New in-app menu for managing running containers, including options to view logs, restart, or recreate.
+- **Improved Reliability**: Fixed syntax errors, enhanced Docker startup, and better error handling for smoother operation.
+- **Extended Health Checks**: Longer wait times for service readiness, ensuring better compatibility with slower systems.
+- **User-Friendly Updates**: Simplified prompts and clearer troubleshooting for common issues.
 
 ## Prerequisites
 
