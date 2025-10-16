@@ -47,7 +47,7 @@
 ### First Time Setup
 
 1. **Run the Launcher**
-   - Double-click `start-sd.bat` (NO admin rights)
+   - Double-click `start-webui.bat` (NO admin rights)
    - First run will:
      - Check Docker installation and start it if needed
      - Create necessary folders (`models/Stable-diffusion`, `models/Lora`, `models/VAE`, `outputs`, `extensions`)
